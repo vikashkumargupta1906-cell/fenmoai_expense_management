@@ -8,7 +8,7 @@ import { FiTrendingUp, FiPieChart, FiDollarSign } from 'react-icons/fi';
 
 const COLORS = ['#818cf8', '#c084fc', '#f472b6', '#fb7185', '#38bdf8', '#4ade80', '#fbbf24'];
 
-const API_BASE_URL = 'http://localhost:5000/expenses';
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/expenses`;
 
 const Dashboard = () => {
   const [expenses, setExpenses] = useState([]);

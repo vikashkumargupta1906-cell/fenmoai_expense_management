@@ -1,7 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const expenseController = require('../controllers/expenseController');
+const auth = require('../middleware/auth');
 const { body, query, validationResult } = require('express-validator');
+
+// Applying auth middleware to all routes in this router
+router.use(auth);
 
 // Validation middleware
 const handleValidationErrors = (req, res, next) => {

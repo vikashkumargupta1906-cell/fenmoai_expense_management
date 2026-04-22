@@ -4,44 +4,42 @@ const { Op } = require('sequelize');
 const createExpense = async (req, res) => {
   try {
     const { id, amount, category, description, date } = req.body;
+    const userId = req.user.id;
 
     // Fast check for idempotency
-    const existingExpense = await Expense.findByPk(id);
-    if (existingExpense) {
-      return res.status(200).json(existingExpense);
+    const existing = await Expense.findOne({ where: { id, userId } });
+    if (existing) {
+      return res.status(200).json(existing);
     }
 
-    try {
-      const newExpense = await Expense.create({
-        id,
-        amount,
-        category,
-        description,
-        date
-      });
-      res.status(201).json(newExpense);
-    } catch (createError) {
-      // Handle the case where another request with the same ID succeeded between our check and create
-      if (createError.name === 'SequelizeUniqueConstraintError') {
-        const raceConditionWinner = await Expense.findByPk(id);
-        return res.status(200).json(raceConditionWinner);
-      }
-      throw createError;
-    }
+    const expense = await Expense.create({ 
+      id, 
+      amount, 
+      category, 
+      description, 
+      date,
+      userId
+    });
+    res.status(201).json(expense);
   } catch (error) {
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      const existing = await Expense.findOne({ where: { id: req.body.id, userId: req.user.id } });
+      return res.status(200).json(existing);
+    }
     console.error('Error creating expense:', error);
-    res.status(400).json({ error: error.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 };
 
 const getExpenses = async (req, res) => {
   try {
     const { category, sort, page = 1, limit = 10 } = req.query;
+    const userId = req.user.id;
     const pageNum = parseInt(page);
     const limitNum = parseInt(limit);
     const offset = (pageNum - 1) * limitNum;
 
-    const where = {};
+    const where = { userId };
     if (category && category !== 'All') {
       where.category = category;
     }

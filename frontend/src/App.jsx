@@ -6,8 +6,24 @@ import ExpenseList from './components/ExpenseList';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Dashboard from './components/Dashboard';
+import { useAuth } from './context/AuthContext';
+import ProtectedRoute from './components/ProtectedRoute';
+import Login from './pages/Login';
+import Signup from './pages/Signup';
 
-const API_BASE_URL = 'http://localhost:5000/expenses';
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/expenses`;
+
+// Axios Request Interceptor for Auth
+axios.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
 // Configure axios-retry
 axiosRetry(axios, {
@@ -20,6 +36,7 @@ axiosRetry(axios, {
 });
 
 function App() {
+  const { logout } = useAuth();
   const [expenses, setExpenses] = useState([]);
   const [pagination, setPagination] = useState({ totalPages: 1, currentPage: 1, totalItems: 0 });
   const [page, setPage] = useState(1);
@@ -27,6 +44,20 @@ function App() {
   const [sort, setSort] = useState('date_desc');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Response Interceptor for invalid tokens
+  useEffect(() => {
+    const interceptor = axios.interceptors.response.use(
+      (response) => response,
+      (error) => {
+        if (error.response?.status === 401) {
+          logout();
+        }
+        return Promise.reject(error);
+      }
+    );
+    return () => axios.interceptors.response.eject(interceptor);
+  }, [logout]);
 
   const fetchExpenses = async () => {
     try {
@@ -79,47 +110,52 @@ function App() {
           </header>
 
           <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<Signup />} />
+
             <Route path="/" element={
-              <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
-                <ExpenseForm onAddExpense={handleAddExpense} />
+              <ProtectedRoute>
+                <div className="animate-in fade-in slide-in-from-bottom-8 duration-700">
+                  <ExpenseForm onAddExpense={handleAddExpense} />
 
-                {error && (
-                  <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-6 rounded-2xl text-center mb-6">
-                    <p className="mb-4 font-medium">{error}</p>
-                    <button
-                      onClick={fetchExpenses}
-                      className="px-6 py-2 bg-indigo-500/20 hover:bg-indigo-500/40 border border-indigo-500/30 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
-                    >
-                      Re-Synchronize Data
-                    </button>
-                  </div>
-                )}
+                  {error && (
+                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-6 rounded-2xl text-center mb-6">
+                      <p className="mb-4 font-medium">{error}</p>
+                      <button
+                        onClick={fetchExpenses}
+                        className="px-6 py-2 bg-indigo-500/20 hover:bg-indigo-500/40 border border-indigo-500/30 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all"
+                      >
+                        Re-Synchronize Data
+                      </button>
+                    </div>
+                  )}
 
-                {loading ? (
-                  <div className="flex flex-col items-center justify-center py-20 gap-4">
-                    <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
-                    <p className="text-slate-500 font-medium animate-pulse">Fetching Records...</p>
-                  </div>
-                ) : (
-                  <ExpenseList
-                    expenses={expenses}
-                    filter={filter}
-                    setFilter={setFilter}
-                    sort={sort}
-                    setSort={setSort}
-                    pagination={pagination}
-                    setPage={setPage}
-                  />
-                )}
-              </div>
+                  {loading ? (
+                    <div className="flex flex-col items-center justify-center py-20 gap-4">
+                      <div className="w-12 h-12 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin"></div>
+                      <p className="text-slate-500 font-medium animate-pulse">Fetching Records...</p>
+                    </div>
+                  ) : (
+                    <ExpenseList
+                      expenses={expenses}
+                      filter={filter}
+                      setFilter={setFilter}
+                      sort={sort}
+                      setSort={setSort}
+                      pagination={pagination}
+                      setPage={setPage}
+                    />
+                  )}
+                </div>
+              </ProtectedRoute>
             } />
 
-            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
           </Routes>
-
-          {/* <footer className="mt-12 text-center text-[10px] text-slate-600 uppercase tracking-[0.2em]">
-            Powered by AntiGravity Intelligence &copy; 2026
-          </footer> */}
         </div>
       </div>
     </Router>

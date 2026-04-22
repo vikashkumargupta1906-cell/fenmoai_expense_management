@@ -17,6 +17,11 @@ db.Sequelize = Sequelize;
 db.sequelize = sequelize;
 
 // Models
+db.User = require('./user')(sequelize, Sequelize.DataTypes);
 db.Expense = require('./expense')(sequelize, Sequelize.DataTypes);
+
+// Associations
+db.User.hasMany(db.Expense, { foreignKey: 'userId', as: 'expenses' });
+db.Expense.belongsTo(db.User, { foreignKey: 'userId', as: 'user' });
 
 module.exports = db;
