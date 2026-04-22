@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import axiosRetry from 'axios-retry';
+import api from './api/api';
 import ExpenseForm from './components/ExpenseForm';
 import ExpenseList from './components/ExpenseList';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
@@ -11,29 +10,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 
-const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '')}/expenses`;
-
-// Axios Request Interceptor for Auth
-axios.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-// Configure axios-retry
-axiosRetry(axios, {
-  retries: 5,
-  retryDelay: axiosRetry.exponentialDelay,
-  retryCondition: (error) => {
-    const isIdempotentPost = error.config?.method?.toLowerCase() === 'post' && error.config?.url?.includes('/expenses');
-    return axiosRetry.isNetworkOrIdempotentRequestError(error) || error.response?.status >= 500 || isIdempotentPost;
-  }
-});
+// API base URL is handled in api.js
 
 function App() {
   const { logout } = useAuth();
@@ -47,7 +24,7 @@ function App() {
 
   // Response Interceptor for invalid tokens
   useEffect(() => {
-    const interceptor = axios.interceptors.response.use(
+    const interceptor = api.interceptors.response.use(
       (response) => response,
       (error) => {
         if (error.response?.status === 401) {
@@ -56,7 +33,7 @@ function App() {
         return Promise.reject(error);
       }
     );
-    return () => axios.interceptors.response.eject(interceptor);
+    return () => api.interceptors.response.eject(interceptor);
   }, [logout]);
 
   const fetchExpenses = async () => {
@@ -67,7 +44,7 @@ function App() {
       const pageParam = `page=${page}`;
       const query = [categoryParam, sortParam, pageParam].filter(Boolean).join('&');
 
-      const response = await axios.get(`${API_BASE_URL}${query ? '?' + query : ''}`);
+      const response = await api.get(`/expenses${query ? '?' + query : ''}`);
       setExpenses(response.data.expenses);
       setPagination(response.data.pagination);
       setError(null);
@@ -91,7 +68,7 @@ function App() {
 
   const handleAddExpense = async (newExpense) => {
     try {
-      await axios.post(API_BASE_URL, newExpense);
+      await api.post('/expenses', newExpense);
       await fetchExpenses();
     } catch (err) {
       console.error('Error adding expense:', err);

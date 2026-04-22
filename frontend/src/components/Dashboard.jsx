@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '../api/api';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   PieChart, Pie, Cell, Legend 
@@ -8,7 +8,7 @@ import { FiTrendingUp, FiPieChart, FiDollarSign } from 'react-icons/fi';
 
 const COLORS = ['#818cf8', '#c084fc', '#f472b6', '#fb7185', '#38bdf8', '#4ade80', '#fbbf24'];
 
-const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '')}/expenses`;
+// API base URL is handled in api.js
 
 const Dashboard = () => {
   const [expenses, setExpenses] = useState([]);
@@ -20,7 +20,7 @@ const Dashboard = () => {
         setLoading(true);
         // Fetch a large number or add a specific "all" flag if needed
         // For now, let's fetch with a high limit to get dashboard data
-        const response = await axios.get(`${API_BASE_URL}?limit=1000`);
+        const response = await api.get('/expenses?limit=1000');
         setExpenses(response.data.expenses);
       } catch (err) {
         console.error('Failed to fetch dashboard data:', err);
