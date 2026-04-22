@@ -4,6 +4,10 @@ const config = require('../configs/config.js');
 const env = process.env.NODE_ENV || 'development';
 const dbConfig = config[env];
 
+if (!dbConfig) {
+  throw new Error(`Database configuration for environment "${env}" is missing in configs/config.js`);
+}
+
 let sequelize;
 if (dbConfig.use_env_variable) {
   sequelize = new Sequelize(process.env[dbConfig.use_env_variable], dbConfig);
