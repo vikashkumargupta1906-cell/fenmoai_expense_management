@@ -11,7 +11,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 
-const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/expenses`;
+const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '')}/expenses`;
 
 // Axios Request Interceptor for Auth
 axios.interceptors.request.use(
@@ -73,7 +73,9 @@ function App() {
       setError(null);
     } catch (err) {
       console.error('Error fetching expenses:', err);
-      setError('Failed to load expenses. Please check if the backend is running.');
+      const status = err.response?.status;
+      const message = err.response?.data?.error || err.message;
+      setError(`Failed to load expenses (${status || 'Network Error'}): ${message}`);
     } finally {
       setLoading(false);
     }

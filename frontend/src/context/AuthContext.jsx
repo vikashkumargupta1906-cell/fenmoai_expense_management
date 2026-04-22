@@ -19,7 +19,8 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/login`, { email, password });
+    const baseUrl = import.meta.env.VITE_API_BASE_URL.replace(/\/$/, '');
+    const response = await axios.post(`${baseUrl}/auth/login`, { email, password });
     const { user, token } = response.data;
     localStorage.setItem('user', JSON.stringify(user));
     localStorage.setItem('token', token);
