@@ -40,7 +40,7 @@ const startServer = async (retries = 10, delay = 2000) => {
     await db.sequelize.authenticate();
     console.log('✅ Connection to database established successfully.');
     
-    //await db.sequelize.sync({ alter: true });
+    await db.sequelize.sync({ alter: true });
     console.log('✅ Database models synced.');
 
     if (process.env.NODE_ENV !== 'test') {
